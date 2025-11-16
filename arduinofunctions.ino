@@ -1,55 +1,73 @@
 #include <Servo.h>
 #include <SoftwareSerial.h>
 
-// movement functions up here because setup functino easier if it uses them
-void f(){
+const int ENA = 3;
+const int R1  = 2;
+const int R2  = 4;
+const int L1  = 6;
+const int L2  = 7;
+const int ENB = 5;
+
+const int servoPin = 9;
+
+#define TXD 10
+#define RXD 11
+
+Servo myServo;
+SoftwareSerial mySerial(RXD, TXD);  // RX, TX
+
+void f() {
   digitalWrite(R1, HIGH);
   digitalWrite(R2, LOW);
   digitalWrite(L1, HIGH);
   digitalWrite(L2, LOW);
   delay(100);
 }
-void b(){
+
+void b() {
   digitalWrite(R1, LOW);
   digitalWrite(R2, HIGH);
   digitalWrite(L1, LOW);
   digitalWrite(L2, HIGH);
   delay(100);
 }
-void l(){
+
+void l() {
   digitalWrite(R1, HIGH);
   digitalWrite(R2, LOW);
   digitalWrite(L1, LOW);
   digitalWrite(L2, LOW);
   delay(100);
 }
-void r(){
+
+void r() {
   digitalWrite(R1, LOW);
   digitalWrite(R2, LOW);
   digitalWrite(L1, HIGH);
   digitalWrite(L2, LOW);
   delay(100);
 }
-void s(){
+
+void s() {
   digitalWrite(R1, LOW);
   digitalWrite(R2, LOW);
-  digitalWrite(L2, LOW);
   digitalWrite(L1, LOW);
+  digitalWrite(L2, LOW);
   delay(100);
 }
 
+void o() {                // open = 90° clockwise
+  myServo.write(90);
+  delay(300);
+}
+
+void c() {                // close = 90° counterclockwise
+  myServo.write(0);
+  delay(300);
+}
+
 void setup() {
-  // init serial
-  Serial.begin(9600)
-
-  // motor setup
-  const int ENA = 3;
-  const int R1 = 2;
-  const int R2 = 4;
-  const int L1 = 6;
-  const int L2 = 7;
-  const int ENB = 5;
-
+  // Motor pins
   pinMode(ENA, OUTPUT);
   pinMode(ENB, OUTPUT);
   pinMode(R1, OUTPUT);
@@ -60,24 +78,20 @@ void setup() {
   digitalWrite(ENA, HIGH);
   digitalWrite(ENB, HIGH);
 
-  s()
+  s();  // stop motors at start
 
-  // servo
-  const int servo = 9;
+  // Servo
+  myServo.attach(servoPin);
+  myServo.write(0);
 
-  Servo myServo;
-
-  myServo.attach(servo);
-
-  myServo.write(0)
-  // HC-05
-  // i lowkey don't know how this works yet
-  SoftwareSerial BTSerial(10, 11); // RXD, TXD
-
+  // Bluetooth
+  Serial.begin(9600);
+  mySerial.begin(9600);
 }
 
-
+// ------------------------
+// Main Loop
+// ------------------------
 void loop() {
-  // put your main code here, to run repeatedly:
 
 }
