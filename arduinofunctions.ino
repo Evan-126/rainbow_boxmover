@@ -64,22 +64,32 @@ void s() {
   delay(100);
 }
 
-// ------------------------
+void a() {
+  digitalWrite(ENA, 80);
+  digitalWrite(ENB, 80);
+  digitalWrite(R1, LOW);
+  digitalWrite(R2, HIGH);
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, HIGH);
+  delay(400);
+  digitalWrite(ENA, HIGH);
+  digitalWrite(ENB, HIGH);
+}
+
 // Servo Open/Close
-// ------------------------
-void o() {             // open = 90° clockwise
+
+void o() {             // open = to open angle 
   myServo.write(80);
   delay(300);
 }
 
-void c() {             // close = 90° counterclockwise
+void c() {             // close = to close position
   myServo.write(160);
   delay(300);
 }
 
-// ------------------------
 // Setup
-// ------------------------
+
 void setup() {
   // Motor pins
   pinMode(ENA, OUTPUT);
@@ -106,22 +116,22 @@ void setup() {
 
 }
 
-// ------------------------
 // Main Loop
-// ------------------------
+
 void loop() {
 
   // bluetooth commands
   if (mySerial.available()) {       // Check if data received from Bluetooth
     char cmd = mySerial.read();     // Read single character
 
-    if (cmd == 'f') f();            // Move forward
-    else if (cmd == 'b') b();       // Move backward
-    else if (cmd == 'l') l();       // Turn left
-    else if (cmd == 'r') r();       // Turn right
-    else if (cmd == 's') s();       // Stop all motors
-    else if (cmd == 'o') o();       // Servo open
-    else if (cmd == 'c') c();       // Servo close
+    if (cmd == 'F') f();            // Move forward
+    else if (cmd == 'B') b();       // Move backward
+    else if (cmd == 'L') l();       // Turn left
+    else if (cmd == 'R') r();       // Turn right
+    else if (cmd == 'S') s();       // Stop all motors
+    else if (cmd == 'A') a();       // Approach Target
+    else if (cmd == 'O') o();       // Servo open
+    else if (cmd == 'C') c();       // Servo close
   }
   // // servo test
   // o();
