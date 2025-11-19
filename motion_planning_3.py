@@ -54,12 +54,10 @@ def chaikin_smooth(path, iterations=3):
 
 # 3) Convert Path to Serial Commands
 
-def path_to_serial_commands(path, ser, dt=0.1, forward_speed=0.3, turn_rate=140):
+def path_to_serial_commands(path, ser, dt=0.1, forward_speed=0.3, turn_rate=140, wheel_base=15.0):
+    #units: dt in seconds, speed in m/s, turn_rate in deg/sec
     """
-    Convert path [(x,y),...] to discrete 'F', 'L', 'R' commands.
-    dt: time per command
-    forward_speed: m/s
-    turn_rate: deg/s
+    Convert path [(x,y),...] to discrete 'F', 'L', 'R' commands using diff drive model.
     """
     current_heading = 0.0  # radians, assume +x start
 
@@ -71,36 +69,71 @@ def path_to_serial_commands(path, ser, dt=0.1, forward_speed=0.3, turn_rate=140)
         dy = y2 - y1
         desired_heading = math.atan2(dy, dx)
 
-        # Compute smallest turn
-        angle_diff = desired_heading - current_heading
-        angle_diff = (angle_diff + math.pi) % (2*math.pi) - math.pi
+        # Smallest rotation angle
+        angle_diff = (desired_heading - current_heading + math.pi) % (2 * math.pi) - math.pi
 
-        direction = 'L' if angle_diff > 0 else 'R'
-        angle_deg = abs(math.degrees(angle_diff))
-        turn_time = angle_deg / turn_rate
-        turn_steps = int(turn_time / dt)
+        # Distance to next point
+        distance = math.hypot(dx, dy)
 
-        # Send turn commands
+        # Get number of steps from differential drive calculation
+        turn_steps, direction, forward_steps = diff_drive_steps(
+            angle_diff,
+            distance,
+            wheel_base=wheel_base,
+            wheel_speed=forward_speed,
+            turn_rate=turn_rate,
+            dt=dt
+        )
+
+        # Execute turn
         for _ in range(turn_steps):
             ser.write(direction.encode())
             time.sleep(dt)
 
-        current_heading = desired_heading
-
-        # Compute forward steps
-        distance = math.hypot(dx, dy)
-        forward_time = distance / forward_speed
-        forward_steps = int(forward_time / dt)
-
-        # Send forward commands
+        # Execute forward movement
         for _ in range(forward_steps):
             ser.write(b'F')
             time.sleep(dt)
 
+        # Update heading
+        current_heading = desired_heading
+
+
+# ----------------------------
+# 3a) Differential Drive Calculations
+# ----------------------------
+def diff_drive_steps(angle_diff, distance, wheel_base=10, wheel_speed=0.3, turn_rate=140, dt=0.1):
+    """
+    Compute the number of forward and turn steps for a 2-wheel robot.
+
+    Parameters:
+    - angle_diff: desired rotation in radians (+ left, - right)
+    - distance: desired linear travel (meters)
+    - wheel_base: distance between the wheels (cm)
+    - wheel_speed: forward speed (m/s)
+    - turn_rate: angular speed (deg/s)
+    - dt: time per command step (s)
+
+    Returns:
+    - (turn_steps, turn_direction, forward_steps)
+    """
+    # Convert rotation to degrees for consistency
+    angle_deg = abs(math.degrees(angle_diff))
+    direction = 'L' if angle_diff > 0 else 'R'
+
+    # Compute steps to rotate robot accurately
+    turn_time = angle_deg / turn_rate       # seconds to rotate desired angle
+    turn_steps = max(1, int(turn_time / dt))  # minimum 1 step
+
+    # Compute steps to move forward accurately
+    forward_time = distance / wheel_speed
+    forward_steps = max(1, int(forward_time / dt))  # minimum 1 step
+
+    return turn_steps, direction, forward_steps
 
 # 4) Serial Initialization
 
-def serial_init(port="COM6", baud=9600):
+def serial_init(port="COM7", baud=9600):
     ser = serial.Serial(port, baud, timeout=0.1)
     time.sleep(2)  # wait for HC-05
     return ser
