@@ -4,6 +4,7 @@ Created on Mon Nov 15 15:15:00 2025
 
 @author: udhak
 """
+# most recent 1:36am
 import math
 import time
 import serial
@@ -78,24 +79,22 @@ def average_coordinates(coords_list):
     return (x_sum/n, y_sum/n)
 
 def get_robotcenter_angle(robot_coords_history):
-    # gets center point of robot using front and back markers
-    # robot_coords_history: list of dicts, each dict has 'front' and 'back' tuples
-    # returns averaged center (x,y) and angle
-    # takes multiple frames (robot_coords_history) and averages front/back position before computation
+    # returns robot center (front mark) and orientation angle
+    # front = center of robot
+    # back = used for angle
     
-    front_points = [rc['front'] for rc in robot_coords_history]
-    back_points = [rc['back'] for rc in robot_coords_history]
+    front_points = [rc['front']['coord'] for rc in robot_coords_history]
+    back_points = [rc['back']['coord'] for rc in robot_coords_history]
     
-    avg_front = average_coordinates(front_points)
+    avg_front = average_coordinates(front_points) # robot center
     avg_back = average_coordinates(back_points)
     
-    x_center = (avg_front[0] + avg_back[0]) / 2
-    y_center = (avg_front[1] + avg_back[1]) / 2
-    
+    # robot center is now xactly at front mark
+    center_robot = avg_front
     # gets robot's orentation angle (direction it is facing)
     angle = calculate_angle(avg_back, avg_front)
     
-    return (x_center, y_center), angle
+    return center_robot, angle # front mark is robot center
  
 def calculate_approach_point(block_coords, center_robot, block_to_robotcenter_offset):
     # finds safe point to approach block, a few cm away from block center
