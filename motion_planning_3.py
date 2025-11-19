@@ -23,7 +23,7 @@ def block_coords():
         'green2': (41.2, -31.1)
     }
 
-def obstacle_generator(block_coords, robot_radius=4.0):
+def obstacle_generator(block_coords, robot_radius=8.0):
     """
     Convert block positions to circular obstacles and inflate by robot radius.
     block_coords: dict of block names -> (x,y)
@@ -32,12 +32,11 @@ def obstacle_generator(block_coords, robot_radius=4.0):
     obs = []
     for pos in block_coords.values():
         x, y = pos
-        obs.append((x, y, robot_radius))  # (center_x, center_y, radius)
+        obs.append((x, y, robot_radius + 1.8))  # (center_x, center_y, bot 'radius' + block 'radius')
     return obs
 
-# ----------------------------
 # 2) Path Smoothing
-# ----------------------------
+
 def chaikin_smooth(path, iterations=3):
     """Basic Chaikin corner-cutting smoothing."""
     path = np.array(path)
@@ -52,9 +51,9 @@ def chaikin_smooth(path, iterations=3):
         path = np.array(new_path)
     return path.tolist()
 
-# ----------------------------
+
 # 3) Convert Path to Serial Commands
-# ----------------------------
+
 def path_to_serial_commands(path, ser, dt=0.1, forward_speed=0.3, turn_rate=140):
     """
     Convert path [(x,y),...] to discrete 'F', 'L', 'R' commands.
@@ -98,17 +97,17 @@ def path_to_serial_commands(path, ser, dt=0.1, forward_speed=0.3, turn_rate=140)
             ser.write(b'F')
             time.sleep(dt)
 
-# ----------------------------
+
 # 4) Serial Initialization
-# ----------------------------
-def serial_init(port="COM7", baud=9600):
+
+def serial_init(port="COM6", baud=9600):
     ser = serial.Serial(port, baud, timeout=0.1)
     time.sleep(2)  # wait for HC-05
     return ser
 
-# ----------------------------
+
 # 5) RRT Planning and Execution
-# ----------------------------
+
 def plan_and_execute():
     # Setup
     robot_start = robot_coords(8, 8, 0, 8)[:2]
@@ -116,7 +115,7 @@ def plan_and_execute():
     first_block = list(blocks.values())[0]
 
     # Environment
-    env = pmp.Map(83.8, 86.3)
+    env = pmp.map(83.8, 86.3)
     obstacles = obstacle_generator(blocks)
     for obs in obstacles:
         env.add_circle(obs[0], obs[1], obs[2])
