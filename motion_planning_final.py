@@ -67,15 +67,33 @@ def calculate_angle(point1, point2):
         
     return degrees
 
-def get_robotcenter_angle(robot_coords):
+def average_coordinates(coords_list):
+    # averages a list of (x,y) coordinates
+    if not coords_list:
+        return (0,0)
+    
+    x_sum = sum([c[0] for c in coords_list])
+    y_sum = sum([c[1] for c in coords_list])
+    n = len(coords_list)
+    return (x_sum/n, y_sum/n)
+
+def get_robotcenter_angle(robot_coords_history):
     # gets center point of robot using front and back markers
-    front_mark = robot_coords['front'] # may need to change string based on CV
-    back_mark = robot_coords['back']
-    x_center = (front_mark[0] + back_mark[0]) / 2
-    y_center = (front_mark[1] + back_mark[1]) / 2
+    # robot_coords_history: list of dicts, each dict has 'front' and 'back' tuples
+    # returns averaged center (x,y) and angle
+    # takes multiple frames (robot_coords_history) and averages front/back position before computation
+    
+    front_points = [rc['front'] for rc in robot_coords_history]
+    back_points = [rc['back'] for rc in robot_coords_history]
+    
+    avg_front = average_coordinates(front_points)
+    avg_back = average_coordinates(back_points)
+    
+    x_center = (avg_front[0] + avg_back[0]) / 2
+    y_center = (avg_front[1] + avg_back[1]) / 2
     
     # gets robot's orentation angle (direction it is facing)
-    angle = calculate_angle(back_mark, front_mark)
+    angle = calculate_angle(avg_back, avg_front)
     
     return (x_center, y_center), angle
  
@@ -116,10 +134,14 @@ def move_to_target(arduino, center_robot, angle_robot, target_coords):
         time.sleep(0.1)
         send_to_Arduino(arduino, stop)
         
-        # update to new position
-        cv_data = get_updated_frame() # getting latest frame
-        center_robot, angle_robot = get_robotcenter_angle(cv_data['robot_coords'])
-        
+        # update robot position with averaging
+        history = []
+        for _ in range(3): # take 3 frames to average
+            cv_data = get_updated_frame()
+            history.append(cv_data['robot_coords']) # make sure same name as CV
+            time.sleep(0.02)
+        center_robot, angle_robot = get_robotcenter_angle(history)
+       
 # BLOCK functions
 def pickup_block(arduino, center_robot, angle_robot, block_coords):
     # approaching block, opening & closing claw
@@ -141,13 +163,28 @@ def select_more_blocks(blocks_lst): # list name may be different
                 return block
     return None
 
-def convert_blocks_from_cv_output(cv_data):
-    # converting CV output to lst of tuples
+def convert_blocks_from_cv_output(cv_data_history):
+    # cv_data_hist: list of CV frames (each with 'blocks_robot_coords)
+    # returns averaged block cordiantes list: [(color, (x,y))]
+    # takes multiple CV frames & averages positoins for each block color
+    
+    if not cv_data_history:
+        return []
+    
+    # collect all positions for each color
+    color_positions = {}
+    for frame in cv_data_history:
+        for block in frame['blocks_robot_coords']:
+            color, coords = block
+            if color not in color_positions:
+                color_positions[color] = []
+            color_positions[color].append(coords)
+    
+    # average positions
     blocks_lst = []
-    for block in cv_data['blocks_robot_coords']:
-        block_color, array_coords = block
-        x, y = array_coords[0], array_coords[1] # tuple
-        blocks_lst.append((block_color, (x,y)))
+    for color, coords_list in color_positions.items():
+        avg_coord = average_coordinates(coords_list)
+        blocks_lst.append((color, avg_coord))
     return blocks_lst
 
 def one_block_pickup(arduino, center_robot, angle_robot, block):
@@ -176,16 +213,29 @@ def main():
     # to ensure runs are repeated until no blocks left
     run_finished = False
     while not run_finished:
-        cv_data = get_updated_frame() # getting data from CV
-        center_robot, angle_robot = get_robotcenter_angle(cv_data['robot_coords'])
-        blocks_lst = convert_blocks_from_cv_output(cv_data)
+        # collect multple CV frames for averaging
+        robot_history = []
+        block_history = []
+        for _ in range(3): # take 3 frames per step
+            cv_frame = get_updated_frame()
+            robot_history.append(cv_frame['robot_coords'])
+            block_history.append(cv_frame)
+            time.sleep(0.02)
         
+        # averaged robot center & angle
+        center_robot, angle_robot = get_robotcenter_angle(robot_history)
+        
+        # averaged block positions
+        blocks_lst = convert_blocks_from_cv_output(block_history)
+        
+        # select next block
         next_block = select_more_blocks(blocks_lst)
+       
         if next_block is None:
             print('No blocks left.')
             return_to_home_location(arduino, center_robot, angle_robot)
             print('Run finished.')
-            run_finshed = True
+            run_finished = True
             break
         
         one_block_pickup(arduino, center_robot, angle_robot, next_block)
