@@ -8,7 +8,7 @@ Created on Mon Nov 15 15:15:00 2025
 import math
 import time
 import serial
-from CV_module import get_updated_frame # replace with actual name
+from main_computer_vision import get_current_positions, detect_robot_markers, cap
 
 # both in frame, may change if workspace changes
 # workspace coordinates
@@ -17,7 +17,7 @@ home_location = (10, 10)
 color_order = ['orange', 'green', 'blue']
 
 # come back for adjustment
-block_to_robotcenter_offset = 8 # cm distance from block to robot center
+block_to_robotcenter_offset = 9 # cm distance from block to robot center
 tolerance_position = 1.5 # cm tolerance for getting to target
 
 # Arduino commands: change later with correct strings used in Arduino
@@ -30,7 +30,7 @@ open_claw = 'O'
 close_claw = 'C'
 
 # connecting to Arduino
-port_num = 'COM7' # change later to correct one
+port_num = 'COM' # change later to correct one
 baud_rate = 9600 # change later to correct one
 
 # connect to serial monitor
@@ -83,6 +83,7 @@ def get_robotcenter_angle(robot_coords_history):
     # front = center of robot
     # back = used for angle
     
+    # using yellow for front and red for back! make sure correct!
     front_points = [rc['front']['coord'] for rc in robot_coords_history]
     back_points = [rc['back']['coord'] for rc in robot_coords_history]
     
@@ -203,6 +204,20 @@ def return_to_home_location(arduino, center_robot, angle_robot):
     move_to_target(arduino, center_robot, angle_robot, home_location)
     print(f'Returned to starting point {home_location}')
     
+def get_updated_frame():
+    ret, frame = cap.read()
+    if not ret:
+        return None
+    
+    blocks_robot_coords = get_current_positions(frame)
+    robot_coords = detect_robot_markers(frame)
+    
+    return {
+        'frame': frame,
+        'blocks_robot_coords': blocks_robot_coords,
+        'robot_coords': robot_coords
+        }
+    
 def main():
     arduino = connect_to_Arduino()
     if arduino is None:
@@ -215,11 +230,21 @@ def main():
         # collect multple CV frames for averaging
         robot_history = []
         block_history = []
-        for _ in range(3): # take 3 frames per step
-            cv_frame = get_updated_frame()
-            robot_history.append(cv_frame['robot_coords'])
-            block_history.append(cv_frame)
+        
+        while len(robot_history) < 3:
+            cv_frame = get_updated_frame() # get CV data
+            
+            # only keep coordinates, map to front and back
+            if cv_frame['robot_coords'] is not None:
+                robot_coords_clean = {
+                    'front': {'coord': cv_frame['robot_coords']['yellow']['coord']},
+                    'back': {'coord': cv_frame['robot_coords']['red']['coord']}
+                    }
+                robot_history.append(robot_coords_clean)
+                
+            block_history.append(cv_frame) # keeping full block informatin for avg
             time.sleep(0.02)
+           
         
         # averaged robot center & angle
         center_robot, angle_robot = get_robotcenter_angle(robot_history)
