@@ -4,7 +4,7 @@ Created on Mon Nov 15 15:15:00 2025
 
 @author: udhak
 """
-# most recent 1:36am
+# most recent 4:23pm
 import math
 import time
 import serial
@@ -17,7 +17,7 @@ home_location = (10, 10)
 color_order = ['orange', 'green', 'blue']
 
 # come back for adjustment
-block_to_robotcenter_offset = 9 # cm distance from block to robot center
+slow_distance = 9 # slow-down distance when approaching a block (cm)
 tolerance_position = 1.5 # cm tolerance for getting to target
 
 # Arduino commands: change later with correct strings used in Arduino
@@ -28,27 +28,38 @@ left = 'L'
 stop = 'S'
 open_claw = 'O'
 close_claw = 'C'
+approach = 'A' # triggers slow movement in Arduino
 
 # connecting to Arduino
-port_num = 'COM' # change later to correct one
+port_num = 'COM7' # change later to correct one
 baud_rate = 9600 # change later to correct one
 
-# connect to serial monitor
-def connect_to_Arduino(port=port_num, baud=baud_rate):
-    # try and except to check for connection and for potential fails
-    try:
-        arduino = serial.Serial(port, baud, timeout=1) # timeout->wait time for a response
-        time.sleep(2) # initializing
-        print('Arduino connection on port', port)
-        return arduino
-    except Exception as ex:
-        print('Error connecting:', ex)
-        return None
-    
+# connect to serial
+def connect_to_Arduino(port=port_num, baud=baud_rate, retries=3):
+    # tries to connect to Arduino via serial
+    # retries up to 'retries' times
+    for attempt in range(1, retries + 1):
+        try:
+            arduino = serial.Serial(port, baud, timeout=1) # timeout->wait time for a response
+            time.sleep(2) # initializing
+            print(f'Arduino connecton successful on port {port}')
+            return arduino
+        except Exception as ex:
+            print(f'Attempt {attempt} failed: {ex}')
+            time.sleep(1)
+    print('Could not connect to Arduino after attempts.')
+    return None
+
 # send commands
-def send_to_Arduino(arduino, command):
-    arduino.write((command + '\n').encode('utf-8')) # string converting string to bytes
-    time.sleep(0.05) # pause (50ms) to process command, can incrase to 0.1?
+def send_to_Arduino(arduino, command, debug=True):
+    # sends a single command to Arduino
+    # adds a newline character to ensure proper reading
+    # optionally prints command for debugging
+    if arduino is not None:
+        arduino.write((command + '\n').encode('utf-8')) # string converting string to bytes
+        if debug:
+            print(f'Sent "{command}" via serial')
+        time.sleep(0.08)
     
 # ROBOT functions
 def calculate_distance(point1, point2):
@@ -97,7 +108,7 @@ def get_robotcenter_angle(robot_coords_history):
     
     return center_robot, angle # front mark is robot center
  
-def calculate_approach_point(block_coords, center_robot, block_to_robotcenter_offset):
+def calculate_approach_point(block_coords, center_robot, slow_distance_cm):
     # finds safe point to approach block, a few cm away from block center
     # makes sure robot doesn't push block when moving in
     
@@ -106,14 +117,16 @@ def calculate_approach_point(block_coords, center_robot, block_to_robotcenter_of
     distance = math.hypot(x_dif, y_dif)
     if distance == 0:
         return center_robot
-    scaling = (distance - block_to_robotcenter_offset)/ distance
+    scaling = (distance - slow_distance_cm)/ distance
     x_approach = center_robot[0] + x_dif * scaling
     y_approach = center_robot[1] + y_dif * scaling
     
     return (x_approach, y_approach)
   
-def move_to_target(arduino, center_robot, angle_robot, target_coords):
+def move_to_target(arduino, center_robot, angle_robot, target_coords, slow_distance_cm=slow_distance):
     # drives robot from current to specific target
+    # when within 'slow_distance' of target, robot moves slowly (shorter steps)
+    slow_mode_triggered = False # flag to only send 'A' once
     while calculate_distance(center_robot, target_coords) > tolerance_position:
         angle_target = calculate_angle(center_robot, target_coords)
         angle_dif = angle_target - angle_robot
@@ -129,24 +142,43 @@ def move_to_target(arduino, center_robot, angle_robot, target_coords):
             send_to_Arduino(arduino, left)
         time.sleep(abs(angle_dif)/90) # turning time, assuming linear turning speed, may need calibration
         send_to_Arduino(arduino, stop)
-
+        
+        # calculate current distance to target
+        distance_to_target = calculate_distance(center_robot, target_coords)
+        
+        # slow approach if within slow_distance
+        if distance_to_target <= slow_distance and not slow_mode_triggered:
+            print(f'Within {slow_distance} cm of target. Triggering slow approach.')
+            send_to_Arduino(arduino, approach) # 'A' triggers Arduino slow move
+            slow_mode_triggered = True
+            
+            # after slow movement, recalculate position
+            history = []
+            for _ in range(3): # take 3 frames to average
+                cv_data = get_updated_frame()
+                history.append(cv_data['robot_coords'])
+                time.sleep(0.02)
+            center_robot, angle_robot = get_robotcenter_angle(history)
+            continue
+        
+        # normal movement forward
         send_to_Arduino(arduino, forward)
         time.sleep(0.1)
         send_to_Arduino(arduino, stop)
         
-        # update robot position with averaging
+        # update robot position with 3 frame avg
         history = []
         for _ in range(3): # take 3 frames to average
             cv_data = get_updated_frame()
-            history.append(cv_data['robot_coords']) # make sure same name as CV
+            history.append(cv_data['robot_coords'])
             time.sleep(0.02)
         center_robot, angle_robot = get_robotcenter_angle(history)
-       
+          
 # BLOCK functions
 def pickup_block(arduino, center_robot, angle_robot, block_coords):
     # approaching block, opening & closing claw
-    approach_coords = calculate_approach_point(block_coords, center_robot, block_to_robotcenter_offset)
-    move_to_target(arduino, center_robot, angle_robot, approach_coords)
+    approach_coords = calculate_approach_point(block_coords, center_robot, slow_distance)
+    move_to_target(arduino, center_robot, angle_robot, approach_coords, slow_distance)
     move_to_target(arduino, center_robot, angle_robot, block_coords)
     send_to_Arduino(arduino, close_claw)
     time.sleep(0.5)
