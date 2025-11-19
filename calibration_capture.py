@@ -33,6 +33,8 @@ while True:
     key = cv2.waitKey(1) & 0xFF
 
     # press 'c' to capture an image
+    ## 15-20 or so 
+    # note that with the big height, distortion coefficient sometimes makes distortion even worse
     if key == ord('c'):
         filename = f"{folder}/calib_{count}.jpg"
         cv2.imwrite(filename, frame)

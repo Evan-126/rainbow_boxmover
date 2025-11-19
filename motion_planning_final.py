@@ -29,7 +29,7 @@ open_claw = 'O'
 close_claw = 'C'
 
 # connecting to Arduino
-port_num = 'COM' # change later to correct one
+port_num = 'COM7' # change later to correct one
 baud_rate = 9600 # change later to correct one
 
 # connect to serial monitor
