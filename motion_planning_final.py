@@ -12,7 +12,7 @@ from main_computer_vision import get_current_positions, detect_robot_markers, ca
 
 # both in frame, may change if workspace changes
 # workspace coordinates
-drop_off = (80, 10)
+drop_off = (75, 15)
 home_location = (10, 10)
 color_order = ['orange', 'green', 'blue']
 
