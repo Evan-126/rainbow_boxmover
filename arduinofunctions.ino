@@ -24,7 +24,7 @@ SoftwareSerial mySerial(RXD, TXD);  // RX, TX
 // Movement Functions
 // ------------------------
 
-void f() {
+void f() { // forward drive full
   digitalWrite(R2, HIGH);
   digitalWrite(R1, LOW);
   digitalWrite(L2, HIGH);
@@ -32,7 +32,7 @@ void f() {
   delay(100);
 }
 
-void b() {
+void b() { // backward drive full
   digitalWrite(R2, LOW);
   digitalWrite(R1, HIGH);
   digitalWrite(L2, LOW);
@@ -40,7 +40,7 @@ void b() {
   delay(100);
 }
 
-void l() {
+void l() {    // left turn (full right forward)
   digitalWrite(R2, HIGH);
   digitalWrite(R1, LOW);
   digitalWrite(L2, LOW);
@@ -48,7 +48,7 @@ void l() {
   delay(100);
 }
 
-void r() {
+void r() {   // right turn (full left forward)
   digitalWrite(R2, LOW);
   digitalWrite(R1, LOW);
   digitalWrite(L2, HIGH);
@@ -56,7 +56,7 @@ void r() {
   delay(100);
 }
 
-void s() {
+void s() {      //full stop
   digitalWrite(R1, LOW);
   digitalWrite(R2, LOW);
   digitalWrite(L1, LOW);
@@ -64,32 +64,34 @@ void s() {
   delay(100);
 }
 
-void a() {
+void a() {      // approach (slow for 2 cm)
   digitalWrite(ENA, 80);
   digitalWrite(ENB, 80);
-  digitalWrite(R1, LOW);
   digitalWrite(R2, HIGH);
-  digitalWrite(L1, LOW);
+  digitalWrite(R1, LOW);
   digitalWrite(L2, HIGH);
-  delay(400);
+  digitalWrite(L1, LOW);
+  delay(500);
   digitalWrite(ENA, HIGH);
   digitalWrite(ENB, HIGH);
 }
 
+// ------------------------
 // Servo Open/Close
-
-void o() {             // open = to open angle 
-  myServo.write(80);
+// ------------------------
+void o() {             // open = 90° clockwise
+  myServo.write(60);
   delay(300);
 }
 
-void c() {             // close = to close position
+void c() {             // close = 90° counterclockwise
   myServo.write(160);
   delay(300);
 }
 
+// ------------------------
 // Setup
-
+// ------------------------
 void setup() {
   // Motor pins
   pinMode(ENA, OUTPUT);
@@ -104,15 +106,17 @@ void setup() {
 
   // s();  // stop motors at start
 
-  // Servo
-  myServo.attach(servoPin);
-  myServo.write(80);
-  // c(); // add a little bit of flair
-  // o();
 
   // Bluetooth
   Serial.begin(9600);
   mySerial.begin(9600);
+
+  
+  // Servo
+  myServo.attach(servoPin);
+  myServo.write(60);
+  c(); // add a little bit of flair
+  o();
 
 }
 
@@ -129,7 +133,7 @@ void loop() {
     else if (cmd == 'L') l();       // Turn left
     else if (cmd == 'R') r();       // Turn right
     else if (cmd == 'S') s();       // Stop all motors
-    else if (cmd == 'A') a();       // Approach Target
+    else if (cmd == 'A') a();       // Approach target
     else if (cmd == 'O') o();       // Servo open
     else if (cmd == 'C') c();       // Servo close
   }
@@ -138,8 +142,18 @@ void loop() {
   // c();
   // delay(500);
 
-  // // motor test
-  // // f();
-  // // delay(1000);
+  // motor test
+  // f();
+  // delay(4000);
+  // a();
+  // delay(3000);
+  // l();
+  // delay(4000);
   // s();
+  // delay(500);
+  // r();
+  // delay(4000);
+  // s();
+  // delay(500);
+  s();
 }
