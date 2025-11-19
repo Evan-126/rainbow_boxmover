@@ -15,21 +15,28 @@ import cv2
 import numpy as np
 
 
-# load saved camera calibration
+# load saved camera calibrationq
 npzfile = np.load('camera_calib_data.npz')
 camera_matrix = npzfile['camera_matrix']
 dist_coeffs = npzfile['dist_coeffs']
 
 # connect to the camera (Camo index might be 1)
 cap = cv2.VideoCapture(1)
+# Force webcam to use the same resolution as calibration images
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+print("Camera now running at:",
+      cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+      cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 
 
 def undistort_frame(frame):
     #remove lens distortion using calibration data
-    # return cv2.undistort(frame, camera_matrix, dist_coeffs)
-    frame_undistorted = frame
-    return frame_undistorted
+    return cv2.undistort(frame, camera_matrix, dist_coeffs)
+    # frame_undistorted = frame
+    # return frame_undistorted
 
 def get_largest_contour(contours):
     if len(contours) == 0:
@@ -112,33 +119,40 @@ def detect_blocks(frame):
     mask_blue = cv2.morphologyEx(mask_blue, cv2.MORPH_OPEN, kernel)
 
     contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    largest_blue = get_largest_contour(contours_blue)
+    # largest_blue = get_largest_contour(contours_blue)
 
-    if largest_blue is not None:
-        M = cv2.moments(largest_blue)
+    # if largest_blue is not None:
+    #     M = cv2.moments(largest_blue)
+    #     if M["m00"] != 0:
+    #         cx = int(M["m10"] / M["m00"])
+    #         cy = int(M["m01"] / M["m00"])
+    #         block_centers.append(('blue', (cx, cy)))
+
+
+    for cnt in contours_blue:
+        M = cv2.moments(cnt)
         if M["m00"] != 0:
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
-            block_centers.append(('blue', (cx, cy)))
-
+            block_centers.append(("blue", (cx, cy)))
     ### BLACK ###
-    lower_black = np.array([0, 0, 0])
-    upper_black = np.array([180, 255, 60])
+    # lower_black = np.array([0, 0, 0])
+    # upper_black = np.array([180, 255, 60])
 
-    mask_black = cv2.inRange(hsv, lower_black, upper_black)
+    # mask_black = cv2.inRange(hsv, lower_black, upper_black)
 
-    mask_black = cv2.morphologyEx(mask_black, cv2.MORPH_CLOSE, kernel)
-    mask_black = cv2.morphologyEx(mask_black, cv2.MORPH_OPEN, kernel)
+    # mask_black = cv2.morphologyEx(mask_black, cv2.MORPH_CLOSE, kernel)
+    # mask_black = cv2.morphologyEx(mask_black, cv2.MORPH_OPEN, kernel)
 
-    contours_black, _ = cv2.findContours(mask_black, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    largest_black = get_largest_contour(contours_black)
+    # contours_black, _ = cv2.findContours(mask_black, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # largest_black = get_largest_contour(contours_black)
 
-    if largest_black is not None:
-        M = cv2.moments(largest_black)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            block_centers.append(('black', (cx, cy)))
+    # if largest_black is not None:
+    #     M = cv2.moments(largest_black)
+    #     if M["m00"] != 0:
+    #         cx = int(M["m10"] / M["m00"])
+    #         cy = int(M["m01"] / M["m00"])
+    #         block_centers.append(('black', (cx, cy)))
 
 
 
@@ -168,8 +182,11 @@ def detect_blocks(frame):
 
 
     ### ORANGE ###
-    lower_orange = np.array([5, 120, 120])
+    # lower_orange = np.array([5, 120, 120])
+    # upper_orange = np.array([20, 255, 255])
+    lower_orange = np.array([10, 150, 150])
     upper_orange = np.array([20, 255, 255])
+
     mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
     contours, _ = cv2.findContours(mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
@@ -230,10 +247,17 @@ def detect_robot_markers(frame):
     mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
     
     # Red mask
-    lower_red1 = np.array([0,100,100])
-    upper_red1 = np.array([10,255,255])
-    lower_red2 = np.array([160,100,100])
+    # lower_red1 = np.array([0,100,100])
+    # upper_red1 = np.array([10,255,255])
+    # lower_red2 = np.array([160,100,100])
+    # upper_red2 = np.array([180,255,255])
+    # STRICT RED
+    lower_red1 = np.array([0,150,150])
+    upper_red1 = np.array([5,255,255])
+    
+    lower_red2 = np.array([170,150,150])
     upper_red2 = np.array([180,255,255])
+
     mask_red = cv2.bitwise_or(cv2.inRange(hsv, lower_red1, upper_red1),
                               cv2.inRange(hsv, lower_red2, upper_red2))
     
@@ -277,10 +301,10 @@ table_real_coords = np.array([
 # corresponding pixel coordinates in the camera feed
 # you can find these manually by clicking the corners or using a calibration checkerboard
 table_pixel_coords = np.array([
-    [284, 2],    # pixel of top-left
-    [1071, 1],    # pixel of top-right
-    [1151, 717],    # pixel of bottom-right
-    [165,710 ]     # pixel of bottom-left
+    [265, 49],    # pixel of top-left
+    [1018, 15],    # pixel of top-right
+    [1118, 717], # pixel of bottom-right
+    [146,718]     # pixel of bottom-left
 ], dtype=np.float32)
 
 # compute homography matrix
@@ -347,6 +371,7 @@ while True:
     # example inside your main loop
     blocks_robot_coords = [(color, pixel_to_robot_coords((x, y))) for color, (x, y) in blocks]
 
+    print(blocks_robot_coords)
     robot_dict = detect_robot_markers(frame_undistorted)
  
     if robot_dict is not None:
