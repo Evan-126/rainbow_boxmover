@@ -13,7 +13,12 @@ actual table cordinates in cm.
 
 import cv2
 import numpy as np
+from get_table_corners import pick_corners
 
+### must click corners from TOP LEFT - TOP RIGHT -
+ #BOTTOM RIGHT - BOTTOM LEFT##
+table_pixel_coords = pick_corners(camera_i=1)
+print("Table corners (pixels):", table_pixel_coords)
 
 # load saved camera calibrationq
 npzfile = np.load('camera_calib_data.npz')
@@ -22,13 +27,22 @@ dist_coeffs = npzfile['dist_coeffs']
 
 # connect to the camera (Camo index might be 1)
 cap = cv2.VideoCapture(1)
-# Force webcam to use the same resolution as calibration images
+# force webcam to use the same resolution as calibration images
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-print("Camera now running at:",
-      cap.get(cv2.CAP_PROP_FRAME_WIDTH),
-      cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+# Get frame width and height
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# print("Camera now running at:",
+#       cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+#       cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+out = cv2.VideoWriter('run_recording.avi',
+                      cv2.VideoWriter_fourcc(*'XVID'),  # codec
+                      20,                               # fps
+                      (frame_width, frame_height)) 
 
 
 
@@ -162,7 +176,7 @@ def detect_blocks(frame):
     
     mask_green = cv2.inRange(hsv, lower_green, upper_green)
     
-    # Erode/dilate to remove noise
+    # remove noise
     kernel = np.ones((5,5), np.uint8)
     mask_green = cv2.morphologyEx(mask_green, cv2.MORPH_OPEN, kernel)
     mask_green = cv2.morphologyEx(mask_green, cv2.MORPH_CLOSE, kernel)
@@ -298,14 +312,14 @@ table_real_coords = np.array([
     [0, 83.8]      # bottom-left
 ], dtype=np.float32)
 
-# corresponding pixel coordinates in the camera feed
-# you can find these manually by clicking the corners or using a calibration checkerboard
-table_pixel_coords = np.array([
-    [265, 49],    # pixel of top-left
-    [1018, 15],    # pixel of top-right
-    [1118, 717], # pixel of bottom-right
-    [146,718]     # pixel of bottom-left
-], dtype=np.float32)
+# find corresponding pixel coordinates in the camera feed
+
+# table_pixel_coords = np.array([
+#     [374, 2],    # pixel of top-left
+#     [1108, 4],    # pixel of top-right
+#     [1139, 719], # pixel of bottom-right
+#     [292,698]     # pixel of bottom-left
+# ], dtype=np.float32)
 
 # compute homography matrix
 homography_matrix, status = cv2.findHomography(table_pixel_coords, table_real_coords)
@@ -371,11 +385,11 @@ while True:
     # example inside your main loop
     blocks_robot_coords = [(color, pixel_to_robot_coords((x, y))) for color, (x, y) in blocks]
 
-    print(blocks_robot_coords)
+    #print(blocks_robot_coords)
     robot_dict = detect_robot_markers(frame_undistorted)
  
     if robot_dict is not None:
-        print(robot_dict)
+       # print(robot_dict)
         yellow_pixel = robot_dict['yellow']['pixel']
         red_pixel    = robot_dict['red']['pixel']
         yellow_pos   = robot_dict['yellow']['coord']
