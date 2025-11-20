@@ -109,15 +109,27 @@ def robot_position(data):
 
 # this is just a list of lists that would come 
 # straight out of carolinas code
+
 raw_raw_raw_blocks = [
-    [('blue', (68.231, 32.077)), ('green', (42.188, 12.101)), ('orange', (20.981, 53.954)), ('orange', (19.907, 72.436))],
-    [('blue', (68.118, 32.021)), ('green', (42.110, 12.198)), ('orange', (20.905, 53.997)), ('orange', (19.792, 72.523))],
-    [('blue', (68.176, 32.051)), ('green', (42.172, 12.126)), ('orange', (20.927, 53.950)), ('orange', (19.890, 72.471))],
-    [('blue', (68.208, 31.992)), ('green', (42.134, 12.178)), ('orange', (20.889, 53.984)), ('orange', (19.840, 72.513))],
-    [('blue', (68.145, 32.005)), ('green', (42.164, 12.153)), ('orange', (20.912, 54.021)), ('orange', (19.873, 72.460))],
-    [('blue', (68.190, 32.035)), ('green', (42.149, 12.118)), ('orange', (20.940, 53.976)), ('orange', (19.855, 72.489))],
-    [('blue', (68.167, 32.002)), ('green', (42.143, 12.159)), ('orange', (20.917, 53.965)), ('orange', (19.835, 72.472))]
+    [('blue', (14.8, 72.3)), ('green', (67.1, 16.4)), ('orange', (22.6, 38.1)),
+     ('blue_1', (75.2, 64.9)), ('green_1', (18.3, 14.7)), ('orange_1', (49.7, 75.8))],
+
+    [('blue', (12.9, 68.6)), ('green', (70.4, 13.5)), ('orange', (28.4, 47.9)),
+     ('blue_1', (73.0, 59.1)), ('green_1', (20.1, 22.8)), ('orange_1', (55.8, 73.4))],
+
+    [('blue', (16.5, 74.1)), ('green', (63.9, 18.3)), ('orange', (25.2, 32.7)),
+     ('blue_1', (71.4, 66.7)), ('green_1', (14.9, 28.6)), ('orange_1', (45.3, 76.0))],
+
+    [('blue', (20.3, 70.9)), ('green', (68.7, 22.5)), ('orange', (31.7, 35.9)),
+     ('blue_1', (74.8, 62.4)), ('green_1', (13.7, 17.9)), ('orange_1', (52.4, 69.8))],
+
+    [('blue', (11.7, 63.2)), ('green', (72.0, 20.1)), ('orange', (23.9, 50.3)),
+     ('blue_1', (76.1, 56.8)), ('green_1', (19.0, 33.5)), ('orange_1', (47.8, 72.7))],
+
+    [('blue', (18.6, 75.4)), ('green', (65.3, 11.9)), ('orange', (29.5, 41.2)),
+     ('blue_1', (70.2, 68.3)), ('green_1', (16.4, 24.7)), ('orange_1', (54.6, 66.1))]
 ]
+
 
 raw_raw_raw_robot = [
     {'yellow': {'pixel': (481, 17), 'coord': (8.603, 2.316)} , 'red': {'pixel': (398, 17), 'coord': (-1.012, 2.290)}},
@@ -153,7 +165,7 @@ map_.fill_boundary_with_obstacles()
 ## note: replace everything to the right of the equals sign 
 # with b_pos('color')
 
-print ("position of the block we're chasing: " + str(b_pos["green"]))
+print ("position of the block we're chasing: " + str(b_pos["orange_1"]))
 random_block = r.choice(list(b_pos.values())) 
 end_goal = (random_block[0] - 7.2, random_block[1] - 7.2)
 
@@ -206,7 +218,7 @@ vis.close()
 ####################################################### i like this format of comments lol
 
 # to take the path and turn it into commands!
-def path_to_commands(path=path_world, start_pose=r_pos, forward_speed=20 , turn_rate=np.radians(140),  # cm/s and rad/s approx
+def path_to_commands(path=path_world, start_pose=r_pos, forward_speed=10 , turn_rate=np.radians(100),  # cm/s and rad/s approx
                      command_duration=0.1, distance_tol=2.0, heading_tol=0.2):
     """
     Converts a path (list of (x,y) waypoints) into discrete commands:
