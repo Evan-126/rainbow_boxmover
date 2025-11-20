@@ -4,7 +4,6 @@ Created on Mon Nov 15 15:15:00 2025
 
 @author: udhak
 """
-# most recent 4:23pm
 import math
 import time
 import serial
@@ -31,7 +30,7 @@ close_claw = 'C'
 approach = 'A' # triggers slow movement in Arduino
 
 # connecting to Arduino
-port_num = 'COM7' # change later to correct one
+port_num = 'COM10' # change later to correct one
 baud_rate = 9600 # change later to correct one
 
 # connect to serial
@@ -244,6 +243,13 @@ def get_updated_frame():
     blocks_robot_coords = get_current_positions(frame)
     robot_coords = detect_robot_markers(frame)
     
+    if blocks_robot_coords is None:
+        blocks_robot_coords = []
+    
+    # robot coords should be a dictionary with 'yellow' and 'red' keys
+    if robot_coords is None or 'yellow' not in robot_coords or 'red' not in robot_coords:
+        robot_coords = None
+    
     return {
         'frame': frame,
         'blocks_robot_coords': blocks_robot_coords,
@@ -266,6 +272,9 @@ def main():
         while len(robot_history) < 3:
             cv_frame = get_updated_frame() # get CV data
             
+            if cv_frame is None:
+                continue
+            
             # only keep coordinates, map to front and back
             if cv_frame['robot_coords'] is not None:
                 robot_coords_clean = {
@@ -273,14 +282,18 @@ def main():
                     'back': {'coord': cv_frame['robot_coords']['red']['coord']}
                     }
                 robot_history.append(robot_coords_clean)
-                
-            block_history.append(cv_frame) # keeping full block informatin for avg
+            
+            # only append valid block information
+            if cv_frame['blocks_robot_coords']:
+                block_history.append(cv_frame)
             time.sleep(0.02)
-           
-        
-        # averaged robot center & angle
-        center_robot, angle_robot = get_robotcenter_angle(robot_history)
-        
+            
+        # check if valid robot frames
+        if robot_history:
+            center_robot, angle_robot = get_robotcenter_angle(robot_history)
+        else:
+            center_robot, angle_robot = (0, 0), 0
+  
         # averaged block positions
         blocks_lst = convert_blocks_from_cv_output(block_history)
         
