@@ -349,7 +349,8 @@ def get_current_positions(frame=None):
     blocks = detect_blocks(frame_undistorted)
 
     # convert to real-world coordinates
-    blocks_robot_coords = [(color, pixel_to_robot_coords((x, y))) for color, (x, y) in blocks]
+    blocks_robot_coords = [(color, tuple(float(v) for v in pixel_to_robot_coords((x, y))))
+    for color, (x, y) in blocks]
 
     return blocks_robot_coords
 
@@ -365,8 +366,8 @@ while True:
     
     # detect blocks & deposit areas
     blocks = detect_blocks(frame_undistorted)
-    #deposits = detect_deposit_areas(frame_undistorted)
     robot_dict = detect_robot_markers(frame_undistorted)
+    postions=get_current_positions(frame_undistorted)
     
     for color, (x, y) in blocks:
         # draw block circles for visual feedback (color-coded)
