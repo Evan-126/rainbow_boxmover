@@ -12,12 +12,10 @@ The Camera Vision system provides real-time detection of blocks and robot marker
 * Overhead camera captures the entire robot workspace in real time using the **Camo Camera** app.
 * Frames are undistorted using pre-computed **camera calibration parameters**.
 * Color segmentation (HSV masking + morphological filtering) is used to detect:
-
   * Colored blocks (green, orange, and blue)
   * Robot orientation markers (yellow + red)
-* Detected pixel locations are converted to real-world table coordinates (in cm) using a **homography matrix**.
+* Pixel positions are converted to real-world table coordinates (cm) using a homography matrix.
 * The module provides continuous updates so the motion planner can:
-
   * Track the robot’s position
   * Identify block positions
   * Plan and execute movements in real time
@@ -31,12 +29,12 @@ The Camera Vision system provides real-time detection of blocks and robot marker
   
 ### Calibration & Corner Selection Workflow
 
-The vision system requires two calibration steps before accurate coordinate mapping is possible:
+Accurate coordinate mapping requires two calibration steps:
 
 #### 1. Camera Calibration (Checkerboard Images)
 
 * Multiple checkerboard images are captured from different angles.
-* These images are used to detect 2D corner points and match them with known 3D checkerboard coordinates.
+* Corner points are detected and matched to known 3D locations.
 * `cv2.calibrateCamera()` computes:
   * The **camera intrinsic matrix**
   * **Lens distortion coefficients**
@@ -44,14 +42,14 @@ The vision system requires two calibration steps before accurate coordinate mapp
 
 #### 2. Table Corner Selection (Homography Setup)
 
-Before running object detection, the user must manually click the four corners of the table in the camera view in the following order:
+Before running object detection, the user must manually click the four corners of the table/bounds in the camera view in the following order:
 
 1. Top-left
 2. Top-right
 3. Bottom-right
 4. Bottom-left
 
-These pixel coordinates are paired with the table’s known real-world dimensions to compute the **homography matrix**, which converts pixel locations into real-world (x, y) coordinates in centimeters.
+These pixel coordinates are paired with measured table dimensions to compute the homography matrix, enabling conversion from pixel to real-world (x, y) coordinates in centimeters.
 
 
 ### Dependencies
