@@ -1,13 +1,16 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 15 15:15:00 2025
 
-@author: udhak
+"""
+Motion Planning for Block-Sorting Robot
+---------------------------------------
+This script handles the high-level motion planning for the robot, including
+navigation, block pickup, and block drop-off. It communcates with the Arduino to
+send movement and claw commands, while using computer-visino data to update the
+robot's position and orientation.
 """
 import math
 import time
 import serial
-# from main_computer_vision import get_current_positions, detect_robot_markers, cap
+from main_computer_vision import get_current_positions, detect_robot_markers, cap
 
 # both in frame, may change if workspace changes
 # workspace coordinates
@@ -15,11 +18,11 @@ drop_off = (75, 15)
 home_location = (10, 10)
 color_order = ['orange', 'green', 'blue']
 
-# come back for adjustment
+# adjusting depending on trial and error
 slow_distance = 9 # slow-down distance when approaching a block (cm)
 tolerance_position = 1.5 # cm tolerance for getting to target
 
-# Arduino commands: change later with correct strings used in Arduino
+# Arduino commands
 forward = 'F'
 backward = 'B'
 right = 'R'
@@ -30,12 +33,12 @@ close_claw = 'C'
 approach = 'A' # triggers slow movement in Arduino
 
 # connecting to Arduino
-port_num = 'COM7' # change later to correct one
-baud_rate = 9600 # change later to correct one
+port_num = 'COM10'
+baud_rate = 9600
 
 # connect to serial
 def connect_to_Arduino(port=port_num, baud=baud_rate, retries=3):
-    # tries to connect to Arduino via serial
+    # connecting to Arduino via serial
     # retries up to 'retries' times
     for attempt in range(1, retries + 1):
         try:
@@ -93,7 +96,7 @@ def get_robotcenter_angle(robot_coords_history):
     # front = center of robot
     # back = used for angle
     
-    # using yellow for front and red for back! make sure correct!
+    # using yellow for front and red for back
     front_points = [rc['front']['coord'] for rc in robot_coords_history]
     back_points = [rc['back']['coord'] for rc in robot_coords_history]
     
@@ -139,7 +142,7 @@ def move_to_target(arduino, center_robot, angle_robot, target_coords, slow_dista
             send_to_Arduino(arduino, right)
         elif angle_dif < 0:
             send_to_Arduino(arduino, left)
-        time.sleep(abs(angle_dif)/90) # turning time, assuming linear turning speed, may need calibration
+        time.sleep(abs(angle_dif)/90) # turning time
         send_to_Arduino(arduino, stop)
         
         # calculate current distance to target
@@ -194,29 +197,29 @@ def select_more_blocks(blocks_lst): # list name may be different
                 return block
     return None
 
-# def convert_blocks_from_cv_output(cv_data_history):
-#     # cv_data_hist: list of CV frames (each with 'blocks_robot_coords)
-#     # returns averaged block cordiantes list: [(color, (x,y))]
-#     # takes multiple CV frames & averages positoins for each block color
+def convert_blocks_from_cv_output(cv_data_history):
+    # cv_data_hist: list of CV frames (each with 'blocks_robot_coords)
+    # returns averaged block cordinates list: [(color, (x,y))]
+    # takes multiple CV frames & averages positoins for each block color
     
-#     if not cv_data_history:
-#         return []
+    if not cv_data_history:
+        return []
     
-#     # collect all positions for each color
-#     color_positions = {}
-#     for frame in cv_data_history:
-#         for block in frame['blocks_robot_coords']:
-#             color, coords = block
-#             if color not in color_positions:
-#                 color_positions[color] = []
-#             color_positions[color].append(coords)
+    # collect all positions for each color
+    color_positions = {}
+    for frame in cv_data_history:
+        for block in frame['blocks_robot_coords']:
+            color, coords = block
+            if color not in color_positions:
+                color_positions[color] = []
+            color_positions[color].append(coords)
     
-#     # average positions
-#     blocks_lst = []
-#     for color, coords_list in color_positions.items():
-#         avg_coord = average_coordinates(coords_list)
-#         blocks_lst.append((color, avg_coord))
-#     return blocks_lst
+    # average positions
+    blocks_lst = []
+    for color, coords_list in color_positions.items():
+        avg_coord = average_coordinates(coords_list)
+        blocks_lst.append((color, avg_coord))
+    return blocks_lst
 
 def one_block_pickup(arduino, center_robot, angle_robot, block):
     # pick up and drop off motion for 1 block
@@ -228,95 +231,86 @@ def one_block_pickup(arduino, center_robot, angle_robot, block):
     drop_block(arduino)
     print(f'Dropped {block[0]} at drop-off')
     time.sleep(0.5)
-    
-# maybe don't need it? just goes back to the very starting point
+
+# optional if want robot to just stop at current location after last block
 def return_to_home_location(arduino, center_robot, angle_robot):
     # move back to the very start point
     move_to_target(arduino, center_robot, angle_robot, home_location)
     print(f'Returned to starting point {home_location}')
     
 def get_updated_frame():
-    # ret, frame = cap.read()
-    # if not ret:
-    #     return None
+    ret, frame = cap.read()
+    if not ret:
+        return None
     
-    # blocks_robot_coords = get_current_positions(frame)
-    # robot_coords = detect_robot_markers(frame)
-    blocks_robot_coords = [('blue', (68.16722869873047, 32.012962341308594)), ('green', (42.14387893676758, 12.154281616210938)), ('orange', (20.910282135009766, 53.98246383666992))]
-    robot_coords = {'yellow': {'pixel': (481, 17), 'coord': (8.547479629516602, 2.2700717449188232)}, 'red': {'pixel': (398, 17), 'coord': (-1.0632202625274658, 2.2562010288238525)}}
-
-    # if blocks_robot_coords is None:
-    #     blocks_robot_coords = []
+    blocks_robot_coords = get_current_positions(frame)
+    robot_coords = detect_robot_markers(frame)
     
-    # # robot coords should be a dictionary with 'yellow' and 'red' keys
-    # if robot_coords is None or 'yellow' not in robot_coords.keys() or 'red' not in robot_coords.keys():
-    #     robot_coords = None
+    if blocks_robot_coords is None:
+        blocks_robot_coords = []
+    
+    # robot coords should be a dictionary with 'yellow' and 'red' keys
+    if robot_coords is None or 'yellow' not in robot_coords or 'red' not in robot_coords:
+        robot_coords = None
     
     return {
-        # 'frame': frame,
-        # 'blocks_robot_coords': blocks_robot_coords,
-        # 'robot_coords': robot_coords
-        blocks_robot_coords, robot_coords
+        'frame': frame,
+        'blocks_robot_coords': blocks_robot_coords,
+        'robot_coords': robot_coords
         }
     
 def main():
     arduino = connect_to_Arduino()
     if arduino is None:
-        print("could not connect to arduino")
-    else: print('Motion planning starting.')
+        return
+    print('Motion planning starting.')
     
-    # # to ensure runs are repeated until no blocks left
-    # run_finished = False
-    # while not run_finished:
-    #     # collect multple CV frames for averaging
-    #     robot_history = []
-    #     block_history = []
+    # to ensure runs are repeated until no blocks left
+    run_finished = False
+    while not run_finished:
+        # collect multple CV frames for averaging
+        robot_history = []
+        block_history = []
         
-    #     while len(robot_history) < 3:
-    #         cv_frame = get_updated_frame() # get CV data
+        while len(robot_history) < 3:
+            cv_frame = get_updated_frame() # get CV data
             
-    #         if cv_frame is None:
-    #             continue
+            if cv_frame is None:
+                continue
             
-    #         # only keep coordinates, map to front and back
-    #         if cv_frame['robot_coords'] is not None:
-    #             robot_coords_clean = {
-    #                 'front': {'coord': cv_frame['robot_coords']['yellow']['coord']},
-    #                 'back': {'coord': cv_frame['robot_coords']['red']['coord']}
-    #                 }
-    #             robot_history.append(robot_coords_clean)
+            # only keep coordinates, map to front and back
+            if cv_frame['robot_coords'] is not None:
+                robot_coords_clean = {
+                    'front': {'coord': cv_frame['robot_coords']['yellow']['coord']},
+                    'back': {'coord': cv_frame['robot_coords']['red']['coord']}
+                    }
+                robot_history.append(robot_coords_clean)
             
-    #         # only append valid block information
-    #         if cv_frame['blocks_robot_coords']:
-    #             block_history.append(cv_frame)
-    #         time.sleep(0.02)
+            # only append valid block information
+            if cv_frame['blocks_robot_coords']:
+                block_history.append(cv_frame)
+            time.sleep(0.02)
             
-    #     # check if valid robot frames
-    #     if robot_history:
-    #         center_robot, angle_robot = get_robotcenter_angle(robot_history)
-    #     else:
-    #         center_robot, angle_robot = (0, 0), 0
+        # check if valid robot frames
+        if robot_history:
+            center_robot, angle_robot = get_robotcenter_angle(robot_history)
+        else:
+            center_robot, angle_robot = (0, 0), 0
   
-    #     # averaged block positions
-    #     blocks_lst = convert_blocks_from_cv_output(block_history)
+        # averaged block positions
+        blocks_lst = convert_blocks_from_cv_output(block_history)
         
-    #     # select next block
-    #     next_block = select_more_blocks(blocks_lst)
+        # select next block
+        next_block = select_more_blocks(blocks_lst)
        
-    #     if next_block is None:
-    #         print('No blocks left.')
-    #         return_to_home_location(arduino, center_robot, angle_robot)
-    #         print('Run finished.')
-    #         run_finished = True
-    #         break
+        if next_block is None:
+            print('No blocks left.')
+            return_to_home_location(arduino, center_robot, angle_robot)
+            print('Run finished.')
+            run_finished = True
+            break
         
-    #     one_block_pickup(arduino, center_robot, angle_robot, next_block)
-    center_robot = (10, 10)
-    angle_robot = (0)
-    next_block = ('green', (40, 40))
-
-    one_block_pickup(arduino, center_robot, angle_robot, next_block)
+        one_block_pickup(arduino, center_robot, angle_robot, next_block)
         
 if __name__ == '__main__':
     main()
-       
