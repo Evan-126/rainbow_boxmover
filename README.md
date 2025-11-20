@@ -89,7 +89,7 @@ The motion planning system coordinates three main tasks:
   * cap camera stream
 
 ### How to Use
-1. Ensure Arduino is connected and teh correct port is set in port_num
+1. Ensure Arduino is connected and the correct port is set in port_num
 2. Make sure the computer vision camera is connected and streaming (cap)
 3. Install dependencies:
     pip install pyserial
@@ -98,11 +98,62 @@ The motion planning system coordinates three main tasks:
 5. The robot will initialize and attempt to execute the high-level block pick-and-plance routine using the planning logic.
 
 Notes:
-* The motion planning routies are designed to work with the Computer Vision module for position   updates.
-* Sybsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
+* The motion planning routines are designed to work with the Computer Vision module for position   updates.
+* Subsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
+
+### Motion Planning Module (Expanded)
+
+The motion planning system orchestrates the full robotics workflow by combining real-time position updates from the Computer Vision module with the discrete motion primitives exposed by the Arduino Control Module.
+
+- It computes navigation goals including target positions, orientations, and approach vectors.  
+- It sends single-character commands (`F`, `B`, `L`, `R`, `S`, `A`, `O`, `C`) over serial to the Arduino, each triggering precise, timed motor/servo actions. This command interface supports incremental movement, safe block handling via slow approaches, and coordinated gripper control.  
+- The control loop integrates vision feedback and command sequencing to adaptively progress through the block pickup and sorting routine.  
+- By abstracting robot actions into fixed-duration primitives, the planning module maintains robust control despite mechanical and communication uncertainties.  
+- The discrete command protocol simplifies synchronization between perception, planning, and actuation layers, enabling modular development and testing.
+
+Together, these modules form an end-to-end autonomous system where vision-driven navigation and task execution are tightly coupled with reliable hardware control through a minimal, high-level serial interface.
 
 
 ## Arduino Control Module
---- insert info @evan
+
+The Arduino Control Module implements the low-level motor and servo actuation for the robot, interfaced via Bluetooth serial commands sent from the Python Motion Planning module.
+
+### Overview
+
+This module runs on an Arduino equipped with a dual H-bridge motor driver (e.g., L298N) controlling two DC motors for differential drive, plus a hobby servo for the gripping arm. It receives single-character commands over a software serial Bluetooth connection (HC-05 module) and executes short, timed motor or servo actions.  
+
+The command protocol is simple and stateless: each character corresponds to one discrete motion primitive executed on the robot, e.g., move forward a short burst, turn left, open or close the gripper. After executing the command, the module stops all motors to maintain precise control and prevent unintended drifting.  
+
+This approach enables fine-grained teleoperation and supports higher-level autonomous motion planning driven by continuous feedback from vision and position estimation modules.
+
+### Hardware Interface
+
+| Component | Pins                                  | Description                               |
+|-----------|-------------------------------------|-------------------------------------------|
+| Motors    | ENA (3), R1 (2), R2 (4), L1 (6), L2 (7), ENB (5) | Dual H-bridge motor driver input pins controlling speed and direction. |
+| Servo     | Pin 9                               | PWM pin controlling the servo gripper.    |
+| Bluetooth | RX (11), TX (10)                    | HC-05 module connected over SoftwareSerial. |
+
+#### Motion Primitives
+
+| Command | Description                                | Behavior                                 |
+|---------|--------------------------------------------|-------------------------------------------|
+| `F`     | Forward drive                              | Both motors forward for 100 ms             |
+| `B`     | Backward drive                             | Both motors reverse for 100 ms             |
+| `L`     | Turn left                                 | Right motor forward pivot for 100 ms      |
+| `R`     | Turn right                                | Left motor forward pivot for 100 ms       |
+| `S`     | Stop all motors                           | Motors off to halt movement                |
+| `A`     | Approach (slow forward)                    | Forward slow for 500 ms (lower speed)      |
+| `O`     | Servo open                               | Gripper moves to 0° (open position)       |
+| `C`     | Servo close                              | Gripper moves to 80° (closed position)    |
+
+Each motion primitive sets motor direction and enable pins, runs for a fixed delay, then stops motors to keep movements discrete and controlled.
+
+### Command Processing Logic
+
+The Arduino continuously listens for incoming characters on the HC-05 Bluetooth serial port. When a command character is detected, the corresponding motion function is triggered, and a brief movement or servo action is executed before returning to the stop state. This ensures that each command triggers an atomic, timed behavior allowing precise remote control and stepwise autonomous navigation.
+
+---
+
 
 
