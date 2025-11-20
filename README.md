@@ -99,7 +99,7 @@ The motion planning system coordinates three main tasks:
 
 Notes:
 * The motion planning routies are designed to work with the Computer Vision module for position   updates.
-* Sybsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
+* Subsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
 
 
 ## Arduino Control Module
