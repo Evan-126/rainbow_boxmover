@@ -81,12 +81,12 @@ void a() {      // approach (slow for 2 cm)
 // Servo Open/Close
 // ------------------------
 void o() {             // open = 90° clockwise
-  myServo.write(60);
+  myServo.write(0);
   delay(300);
 }
 
 void c() {             // close = 90° counterclockwise
-  myServo.write(160);
+  myServo.write(80);
   delay(300);
 }
 
