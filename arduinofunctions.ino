@@ -24,8 +24,9 @@ SoftwareSerial mySerial(RXD, TXD);  // RX, TX
 // Movement Functions
 // ------------------------
 
+// R2 HIGH TO R2 220
 void f() { // forward drive full
-  digitalWrite(R2, HIGH);
+  digitalWrite(R2, 220);
   digitalWrite(R1, LOW);
   digitalWrite(L2, HIGH);
   digitalWrite(L1, LOW);
@@ -41,7 +42,7 @@ void b() { // backward drive full
 }
 
 void l() {    // left turn (full right forward)
-  digitalWrite(R2, HIGH);
+  digitalWrite(R2, 220);
   digitalWrite(R1, LOW);
   digitalWrite(L2, LOW);
   digitalWrite(L1, LOW);
@@ -67,7 +68,7 @@ void s() {      //full stop
 void a() {      // approach (slow for 2 cm)
   digitalWrite(ENA, 80);
   digitalWrite(ENB, 80);
-  digitalWrite(R2, HIGH);
+  digitalWrite(R2, 220);
   digitalWrite(R1, LOW);
   digitalWrite(L2, HIGH);
   digitalWrite(L1, LOW);
