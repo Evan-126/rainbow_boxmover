@@ -33,12 +33,10 @@ Accurate coordinate mapping requires two calibration steps:
 
 #### 1. Camera Calibration (Checkerboard Images)
 
-* Multiple checkerboard images are captured from different angles.
-* Corner points are detected and matched to known 3D locations.
-* `cv2.calibrateCamera()` computes:
-  * The **camera intrinsic matrix**
-  * **Lens distortion coefficients**
-* These parameters are saved and later applied to undistort each incoming frame.
+A helper script (`calibration_capture.py`) is included to collect checkerboard photos:
+* Opens the live camera feed; Press **c** to capture a frame  **q** to quit  
+* Saves all frames to `/calibration_images/`
+Captured images from multiple angles are used to detect corner points and match them to known 3D locations. (`compute_calibration.py`)  computes the camera intrinsic matrix and lens distortion coefficients, which are saved and later applied to undistort each frame.
 
 #### 2. Table Corner Selection (Homography Setup)
 
@@ -50,13 +48,6 @@ Before running object detection, the user must manually click the four corners o
 4. Bottom-left
 
 These pixel coordinates are paired with measured table dimensions to compute the homography matrix, enabling conversion from pixel to real-world (x, y) coordinates in centimeters.
-
-### Dependencies
-
-* Python 3
-* OpenCV
-* NumPy
-* Camo Camera app (for virtual webcam)
 
 
 ## Motion Planning Module
