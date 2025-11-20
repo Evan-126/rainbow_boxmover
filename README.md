@@ -87,7 +87,20 @@ The motion planning system coordinates three main tasks:
 * * get_current_positions()
   * detect_robot_markers()
   * cap camera stream
-  
+
+### How to Use
+1. Ensure Arduino is connected and teh correct port is set in port_num
+2. Make sure the computer vision camera is connected and streaming (cap)
+3. Install dependencies:
+    pip install pyserial
+4. Run motion planning script:
+   python motion_planning_final.py
+5. The robot will initialize and attempt to execute the high-level block pick-and-plance routine using the planning logic.
+
+Notes:
+* The motion planning routies are designed to work with the Computer Vision module for position   updates.
+* Sybsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
+
 
 ## Arduino Control Module
 --- insert info @evan
