@@ -67,7 +67,7 @@ The motion planning system coordinates three main tasks:
 
 ### Key Features
 
-* Orientatio and distance calculation for navigation
+* Orientation and distance calculation for navigation
 * Automatic alignment to target coordinates
 * Slow-apprach behavior when near a block
 * Averaging of multiple CV frames for smoother tracking
