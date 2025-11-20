@@ -17,8 +17,8 @@ from get_table_corners import pick_corners
 
 ### must click corners from TOP LEFT - TOP RIGHT -
  #BOTTOM RIGHT - BOTTOM LEFT##
-table_pixel_coords = pick_corners(camera_i=1)
-print("Table corners (pixels):", table_pixel_coords)
+# table_pixel_coords = pick_corners(camera_i=1)
+# print("Table corners (pixels):", table_pixel_coords)
 
 # load saved camera calibrationq
 npzfile = np.load('camera_calib_data.npz')
@@ -295,7 +295,7 @@ def detect_robot_markers(frame):
     'yellow': {'pixel': yellow_pixel, 'coord': yellow_coord},
     'red': {'pixel': red_pixel, 'coord': red_coord}
 }
-
+    # print(robot_dict)
     return robot_dict
 
 
@@ -314,12 +314,12 @@ table_real_coords = np.array([
 
 # find corresponding pixel coordinates in the camera feed
 
-# table_pixel_coords = np.array([
-#     [374, 2],    # pixel of top-left
-#     [1108, 4],    # pixel of top-right
-#     [1139, 719], # pixel of bottom-right
-#     [292,698]     # pixel of bottom-left
-# ], dtype=np.float32)
+table_pixel_coords = np.array([
+    [408, 1],    # pixel of top-left
+    [1156, 0],    # pixel of top-right
+    [1208, 665], # pixel of bottom-right
+    [374, 661]     # pixel of bottom-left
+], dtype=np.float32)
 
 # compute homography matrix
 homography_matrix, status = cv2.findHomography(table_pixel_coords, table_real_coords)
@@ -351,6 +351,8 @@ def get_current_positions(frame=None):
     # convert to real-world coordinates
     blocks_robot_coords = [(color, tuple(float(v) for v in pixel_to_robot_coords((x, y))))
     for color, (x, y) in blocks]
+
+    # print(blocks_robot_coords)
 
     return blocks_robot_coords
 

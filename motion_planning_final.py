@@ -6,6 +6,7 @@ Created on Mon Nov 15 15:15:00 2025
 """
 import math
 import time
+import numpy as np
 import serial
 from main_computer_vision import get_current_positions, detect_robot_markers, cap
 
@@ -30,7 +31,7 @@ close_claw = 'C'
 approach = 'A' # triggers slow movement in Arduino
 
 # connecting to Arduino
-port_num = 'COM10' # change later to correct one
+port_num = 'COM7' # change later to correct one
 baud_rate = 9600 # change later to correct one
 
 # connect to serial
@@ -240,9 +241,11 @@ def get_updated_frame():
     if not ret:
         return None
     
-    blocks_robot_coords = get_current_positions(frame)
-    robot_coords = detect_robot_markers(frame)
-    
+    # blocks_robot_coords = get_current_positions(frame)
+    # robot_coords = detect_robot_markers(frame)
+    blocks_robot_coords = [('blue', (68.16722869873047, 32.012962341308594)), ('green', (42.14387893676758, 12.154281616210938)), ('orange', (20.910282135009766, 53.98246383666992))]
+    robot_coords = {'yellow': {'pixel': (481, 17), 'coord': (8.547479629516602, 2.2700717449188232)}, 'red': {'pixel': (398, 17), 'coord': (-1.0632202625274658, 2.2562010288238525)}}
+
     if blocks_robot_coords is None:
         blocks_robot_coords = []
     
