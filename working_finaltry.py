@@ -1,40 +1,16 @@
 import serial
-import time
 import random as r
 import math
 import numpy as np
 np.random.seed(0) #consistency is key
 
+# from main_computer_vision import 
+
+from collections import defaultdict
+
 from python_motion_planning.common import *
 from python_motion_planning.path_planner import *
 from python_motion_planning.controller import *
-
-# from main_computer_vision import cap, undistort_frame, detect_robot_markers, get_current_positions
-
-# def collect_from_carolina(cap=cap):
-#     """
-#     Collects robot and block positions for 0.5s, returns two lists of detections.
-#     """
-#     block_samples, robot_samples = [], []
-#     t_start = time.time()
-#     while time.time() - t_start < 0.5:
-#         ret, frame = cap.read()
-#         if not ret:
-#             continue
-#         #interestingly, carolina chose to undistort the image in
-#         # her current positions function but not her
-#         # robot markers function... this deals with that
-#         # i'd rather not touch her code lol, tentatively doing mine as is
-#         frame_undistorted = undistort_frame(frame)
-#         blocks = get_current_positions(frame)
-#         print(blocks)
-#         if blocks:
-#             block_samples.append(blocks)
-#         robot = detect_robot_markers(frame_undistorted)
-#         if robot:
-#             robot_samples.append(robot)
-#     print('block_positions, robot_positoin: {1}{2}'), block_samples, robot_samples
-#     return block_samples, robot_samples
 
 #to turn coordinates with floats to ints
 def tgv(coord):
@@ -133,16 +109,14 @@ def robot_position(data):
 
 # this is just a list of lists that would come 
 # straight out of carolinas code
-# raw_raw_blocks, raw_raw_robot = collect_from_carolina()
-
 raw_raw_raw_blocks = [
-    [('blue', (68.231, 32.077)), ('green', (42.188, 12.101)), ('orange_1', (67.2, 71.1)), ('orange', (19.907, 72.436))],
-    [('blue', (68.118, 32.021)), ('green', (42.110, 12.198)), ('orange_1', (67.15, 71.1)), ('orange', (19.792, 72.523))],
-    [('blue', (68.176, 32.051)), ('green', (42.172, 12.126)), ('orange_1', (67.13, 71.09)), ('orange', (19.890, 72.471))],
-    [('blue', (68.208, 31.992)), ('green', (42.134, 12.178)), ('orange_1', (67.19, 71.15)), ('orange', (19.840, 72.513))],
-    [('blue', (68.145, 32.005)), ('green', (42.164, 12.153)), ('orange_1', (67.23, 71.11)), ('orange', (19.873, 72.460))],
-    [('blue', (68.190, 32.035)), ('green', (42.149, 12.118)), ('orange_1', (67.21, 71.08)), ('orange', (19.855, 72.489))],
-    [('blue', (68.167, 32.002)), ('green', (42.143, 12.159)), ('orange_1', (67.22, 71.12)), ('orange', (19.835, 72.472))]
+    [('blue', (68.231, 32.077)), ('green', (42.188, 12.101)), ('orange', (20.981, 53.954)), ('orange', (19.907, 72.436))],
+    [('blue', (68.118, 32.021)), ('green', (42.110, 12.198)), ('orange', (20.905, 53.997)), ('orange', (19.792, 72.523))],
+    [('blue', (68.176, 32.051)), ('green', (42.172, 12.126)), ('orange', (20.927, 53.950)), ('orange', (19.890, 72.471))],
+    [('blue', (68.208, 31.992)), ('green', (42.134, 12.178)), ('orange', (20.889, 53.984)), ('orange', (19.840, 72.513))],
+    [('blue', (68.145, 32.005)), ('green', (42.164, 12.153)), ('orange', (20.912, 54.021)), ('orange', (19.873, 72.460))],
+    [('blue', (68.190, 32.035)), ('green', (42.149, 12.118)), ('orange', (20.940, 53.976)), ('orange', (19.855, 72.489))],
+    [('blue', (68.167, 32.002)), ('green', (42.143, 12.159)), ('orange', (20.917, 53.965)), ('orange', (19.835, 72.472))]
 ]
 
 raw_raw_raw_robot = [
@@ -175,13 +149,12 @@ map_.fill_boundary_with_obstacles()
 ############################################
 ######    CONTROLLER SECTION ###############
 ############################################
-target_block = 'orange_1'
 
 ## note: replace everything to the right of the equals sign 
 # with b_pos('color')
 
-print ("position of the block we're chasing: " + str(b_pos[target_block]))
-random_block = b_pos([target_block])
+print ("position of the block we're chasing: " + str(b_pos["green"]))
+random_block = r.choice(list(b_pos.values())) 
 end_goal = (random_block[0] - 7.2, random_block[1] - 7.2)
 
 start, goal = tgv(r_pos[0]), tgv(end_goal)
@@ -226,47 +199,7 @@ for rid in robots:
     print(rid, ":", vis.get_traj_info(rid, ctrl.goal, ctrl.goal_dist_tol, ctrl.goal_orient_tol))
 vis.close()
 
-def final_approach(botpos, target_block_pos):
-    """
-    Computes a short path to halfway point between robot and target block and 
-    generates movement commands for the robot.
-
-    Args:
-    - botpos: (x, y, theta) tuple of current robot pose
-    - target_block_pos: (x, y) tuple of target block position
-
-    Returns:
-    - commands: list of motions ('L', 'R', 'F', etc.)
-    """
-
-    bot_x, bot_y, bot_theta = botpos
-    target_x, target_y = target_block_pos
-
-    # Vector from robot to block
-    dx = target_x - bot_x
-    dy = target_y - bot_y
-
-    # Distance
-    d = math.sqrt(dx*dx + dy*dy)
-
-    # Angle toward target block from robot position
-    angle_to_target = math.atan2(dy, dx)
-
-    # Halfway point position
-    mid_x = bot_x + (d/2) * math.cos(angle_to_target)
-    mid_y = bot_y + (d/2) * math.sin(angle_to_target)
-
-    # Define path waypoints: start and halfway
-    path = [(bot_x, bot_y), (mid_x, mid_y)]
-
-    # Prepare start pose:
-    start_pose = (bot_x, bot_y, bot_theta)
-
-    # Generate commands using your existing path_to_commands
-    coms = path_to_commands(path=path, start_pose=start_pose)
-    commands = coms.append('C', 'O', 'F', 'F', 'C')
-    return commands
-
+   
 
 #######################################################
 ####### actually outputting to the robot ##############
@@ -343,14 +276,6 @@ def path_to_commands(path=path_world, start_pose=r_pos, forward_speed=20 , turn_
 a = connect_to_Arduino(port_num, baud_rate)
 rposnew = r_pos[0][0], r_pos[0][1], r_pos[1]
 commands = path_to_commands(start_pose = rposnew)
- # generate all the commands for a path from where the robot is to the point on the circle
-for c in commands: # and send it to the lil bot of course
+for c in commands:
     send_to_Arduino(a, c)
-approach_commands = final_approach(path_world[-1], random_block)
-for apc in approach_commands:
-    send_to_Arduino(a, apc)
-
-return_commands = path_to_commands(path = [random_block, (10,10)], start_pos = tuple(random_block.split(','), 45))
-for rec in return_commands:
-    send_to_Arduino(a, rec)
 
