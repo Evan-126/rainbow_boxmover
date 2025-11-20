@@ -101,12 +101,24 @@ Notes:
 * The motion planning routines are designed to work with the Computer Vision module for position   updates.
 * Subsystems (CV detction, Arduino communication, and planning logic algorithms) work and are there independently, but full end-to-end testing has not yet been completed.
 
+### Motion Planning Module (Expanded)
 
-### Arduino Control Module
+The motion planning system orchestrates the full robotics workflow by combining real-time position updates from the Computer Vision module with the discrete motion primitives exposed by the Arduino Control Module.
+
+- It computes navigation goals including target positions, orientations, and approach vectors.  
+- It sends single-character commands (`F`, `B`, `L`, `R`, `S`, `A`, `O`, `C`) over serial to the Arduino, each triggering precise, timed motor/servo actions. This command interface supports incremental movement, safe block handling via slow approaches, and coordinated gripper control.  
+- The control loop integrates vision feedback and command sequencing to adaptively progress through the block pickup and sorting routine.  
+- By abstracting robot actions into fixed-duration primitives, the planning module maintains robust control despite mechanical and communication uncertainties.  
+- The discrete command protocol simplifies synchronization between perception, planning, and actuation layers, enabling modular development and testing.
+
+Together, these modules form an end-to-end autonomous system where vision-driven navigation and task execution are tightly coupled with reliable hardware control through a minimal, high-level serial interface.
+
+
+## Arduino Control Module
 
 The Arduino Control Module implements the low-level motor and servo actuation for the robot, interfaced via Bluetooth serial commands sent from the Python Motion Planning module.
 
-#### Overview
+### Overview
 
 This module runs on an Arduino equipped with a dual H-bridge motor driver (e.g., L298N) controlling two DC motors for differential drive, plus a hobby servo for the gripping arm. It receives single-character commands over a software serial Bluetooth connection (HC-05 module) and executes short, timed motor or servo actions.  
 
@@ -114,7 +126,7 @@ The command protocol is simple and stateless: each character corresponds to one 
 
 This approach enables fine-grained teleoperation and supports higher-level autonomous motion planning driven by continuous feedback from vision and position estimation modules.
 
-#### Hardware Interface
+### Hardware Interface
 
 | Component | Pins                                  | Description                               |
 |-----------|-------------------------------------|-------------------------------------------|
@@ -137,22 +149,11 @@ This approach enables fine-grained teleoperation and supports higher-level auton
 
 Each motion primitive sets motor direction and enable pins, runs for a fixed delay, then stops motors to keep movements discrete and controlled.
 
-#### Command Processing Logic
+### Command Processing Logic
 
 The Arduino continuously listens for incoming characters on the HC-05 Bluetooth serial port. When a command character is detected, the corresponding motion function is triggered, and a brief movement or servo action is executed before returning to the stop state. This ensures that each command triggers an atomic, timed behavior allowing precise remote control and stepwise autonomous navigation.
 
 ---
 
-### Motion Planning Module (Expanded)
-
-The motion planning system orchestrates the full robotics workflow by combining real-time position updates from the Computer Vision module with the discrete motion primitives exposed by the Arduino Control Module.
-
-- It computes navigation goals including target positions, orientations, and approach vectors.  
-- It sends single-character commands (`F`, `B`, `L`, `R`, `S`, `A`, `O`, `C`) over serial to the Arduino, each triggering precise, timed motor/servo actions. This command interface supports incremental movement, safe block handling via slow approaches, and coordinated gripper control.  
-- The control loop integrates vision feedback and command sequencing to adaptively progress through the block pickup and sorting routine.  
-- By abstracting robot actions into fixed-duration primitives, the planning module maintains robust control despite mechanical and communication uncertainties.  
-- The discrete command protocol simplifies synchronization between perception, planning, and actuation layers, enabling modular development and testing.
-
-Together, these modules form an end-to-end autonomous system where vision-driven navigation and task execution are tightly coupled with reliable hardware control through a minimal, high-level serial interface.
 
 
