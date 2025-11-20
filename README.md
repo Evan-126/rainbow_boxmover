@@ -60,10 +60,42 @@ These pixel coordinates are paired with measured table dimensions to compute the
 
 
 ## Motion Planning Module
---- insert info @ushma
 
+This module implements the high-level navigation and task logic for the block-sorting robot. It determines how the robot should orient, move, approach blocks, pick them up, and transport them to the drop-off zone. The module communicates with the Arduino for motor and claw control while using computer-vision updates to track the robot's position and orientation.
 
+### Overview
 
+The motion planning system coordinates three main tasks:
+1. Navigation:
+   Computes angles, distances, and turn coorrections to guide the robot toward targets.
+2. Block Handling:
+   Selects blocks based on a priority color order and generates approach points to ensure safe      pickup.
+3. Integrated Control Loop:
+   Continuously updates robot position from computer vision, averages multiple frames for           stability, and sends serial commands to the Arduino to adjust the robot's movement in real       time.
+
+### Key Features
+
+* Orientatio and distance calculation for navigation
+* Automatic alignment to target coordinates
+* Slow-apprach behavior when near a block
+* Averaging of multiple CV frames for smoother tracking
+* Safe approach-point generation to prevent bumping blocks
+* Block selection based on predefined color priority (orange--green--blue)
+* Pickup and drop-off routines (claw control + movement)
+* Optional return-to-home behavior after completing all blocks
+* Serial communication with Arduino for motor commands
+
+### Dependencies
+
+* Python 3
+* math
+* time
+* serial (pySerial)
+* Computer Vision module
+* * get_current_positions()
+  * detect_robot_markers()
+  * cap camera stream
+  
 
 ## Arduino Control Module
 --- insert info @evan
