@@ -153,6 +153,11 @@ Each motion primitive sets motor direction and enable pins, runs for a fixed del
 
 The Arduino continuously listens for incoming characters on the HC-05 Bluetooth serial port. When a command character is detected, the corresponding motion function is triggered, and a brief movement or servo action is executed before returning to the stop state. This ensures that each command triggers an atomic, timed behavior allowing precise remote control and stepwise autonomous navigation.
 
+### To Run the File
+
+The code used to receive serial commands and interpret them as motion through powering the motors a set amount of time and servos for a set distance is found in the file (`arduinofunctions.ino`). To run this program one would need to download the Arduino IDE, freely available with a quick google search. Additionally, servo and serial test programs are found in the test folder under (`test_scripts/serial_test.py`) and (`test_scripts/servo_test.io`). serial test would be run as a pythono file, but it is a simpler way to show whether or not you've connected to the HC-05. 
+
+
 ---
 
 
