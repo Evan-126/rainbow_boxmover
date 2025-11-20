@@ -51,10 +51,21 @@ Before running object detection, the user must manually click the four corners o
 
 These pixel coordinates are paired with measured table dimensions to compute the homography matrix, enabling conversion from pixel to real-world (x, y) coordinates in centimeters.
 
-
 ### Dependencies
 
 * Python 3
 * OpenCV
 * NumPy
 * Camo Camera app (for virtual webcam)
+
+
+## Motion Planning Module
+--- insert info @ushma
+
+
+
+
+## Arduino Control Module
+--- insert info @evan
+
+
