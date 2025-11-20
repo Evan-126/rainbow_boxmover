@@ -1,6 +1,7 @@
-# rainbow_boxmover
-Final Project for ME396P: python-based autonomous arduino-run robot. Heavy use of Computer vision and Motion Planning
+# Rainbow_BoxMover
+Final Project for ME396P: Python-Controlled Autonmous Robot
 
+Rainbow_BoxMover is a block-sorting robot that integrates computer vision, high-level motion planning, and Arduino-based motor control. An overhead iPhone camera detects the colored blocks and the robot's orientation, while a Python controller plans the robot's path, sends commands to the Arduino, and coordinates pickup and drop-off actions. The system demonstrates end-to-end integration of perception, decision-making, and physical actuation in a small-scale robotic application.
 
 
 ## Camera Vision Module
