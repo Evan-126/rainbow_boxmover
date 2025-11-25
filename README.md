@@ -83,6 +83,7 @@ The motion planning system coordinates three main tasks:
 * math
 * time
 * serial (pySerial)
+* python-motion-planning v2.0.dev1 [(https://github.com/ai-winter/python_motion_planning)]
 * Computer Vision module
 * * get_current_positions()
   * detect_robot_markers()
